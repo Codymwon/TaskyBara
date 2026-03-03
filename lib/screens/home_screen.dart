@@ -8,6 +8,7 @@ import '../providers/settings_provider.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/task_card.dart';
+import 'package:flutter/services.dart';
 import '../widgets/category_chip.dart';
 import '../widgets/capybara_mood.dart';
 import 'add_edit_task_screen.dart';
@@ -34,6 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _showCompleted = false;
   bool _hasShownSwipeTip = false;
   bool _hasShownClearTip = false;
+  bool _hasShownReorderTip = false;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     _hasShownSwipeTip = prefs.getBool('hasShownSwipeTip') ?? false;
     _hasShownClearTip = prefs.getBool('hasShownClearTip') ?? false;
+    _hasShownReorderTip = prefs.getBool('hasShownReorderTip') ?? false;
   }
 
   TaskProvider get _tasks => widget.taskProvider;
@@ -73,6 +76,17 @@ class _HomeScreenState extends State<HomeScreen> {
         final filteredPending = _tasks.tasksByCategory(_selectedCategory);
         final completedTasks = _tasks.completedTasks;
         final moodState = _mapMood(_tasks.mood);
+        if (_tasks.tasks.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showSwipeTipIfNeeded();
+          });
+        }
+
+        if (completedTasks.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _showClearTipIfNeeded();
+          });
+        }
 
         return Scaffold(
           body: SafeArea(
@@ -153,19 +167,111 @@ class _HomeScreenState extends State<HomeScreen> {
                         // Category filters
                         SizedBox(
                           height: 42,
-                          child: ListView.separated(
+                          child: ReorderableListView.builder(
                             scrollDirection: Axis.horizontal,
-                            itemCount: TaskCategory.defaults.length,
-                            separatorBuilder: (_, __) =>
-                                const SizedBox(width: 8),
+                            buildDefaultDragHandles: false,
+                            proxyDecorator: (child, index, animation) {
+                              return Material(
+                                color: Colors.transparent,
+                                elevation: 8,
+                                shadowColor: Colors.black.withValues(
+                                  alpha: 0.3,
+                                ),
+                                shape: const StadiumBorder(),
+                                clipBehavior: Clip.antiAlias,
+                                child: child,
+                              );
+                            },
+                            onReorderStart: (_) => HapticFeedback.heavyImpact(),
+                            onReorder: (oldIndex, newIndex) {
+                              if (oldIndex == 0 ||
+                                  oldIndex == _tasks.categories.length)
+                                return;
+
+                              int clampedNewIndex = newIndex;
+                              if (clampedNewIndex <= 0) clampedNewIndex = 1;
+                              if (clampedNewIndex > _tasks.categories.length) {
+                                clampedNewIndex = _tasks.categories.length;
+                              }
+
+                              if (oldIndex < clampedNewIndex) {
+                                clampedNewIndex -= 1;
+                              }
+
+                              _tasks.reorderCategories(
+                                oldIndex - 1,
+                                clampedNewIndex - 1,
+                              );
+                            },
+                            itemCount: _tasks.categories.length + 1,
                             itemBuilder: (context, index) {
-                              final cat = TaskCategory.defaults[index];
-                              return CategoryChip(
-                                category: cat,
-                                isSelected: _selectedCategory == cat.name,
-                                onTap: () {
-                                  setState(() => _selectedCategory = cat.name);
-                                },
+                              if (index == _tasks.categories.length) {
+                                return Padding(
+                                  key: const ValueKey('btn_add_category'),
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: ActionChip(
+                                    onPressed: _addCustomCategory,
+                                    backgroundColor: isDark
+                                        ? const Color(0xFF2C2824)
+                                        : Colors.white,
+                                    side: BorderSide(
+                                      color: colorScheme.primary.withValues(
+                                        alpha: 0.2,
+                                      ),
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(50),
+                                    ),
+                                    label: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.add_rounded,
+                                          size: 18,
+                                          color: colorScheme.primary,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Add',
+                                          style: GoogleFonts.nunito(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w700,
+                                            color: colorScheme.primary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }
+
+                              final catName = _tasks.categories[index];
+                              final cat = TaskCategory.fromName(catName);
+                              final chip = Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: CategoryChip(
+                                  category: cat,
+                                  isSelected: _selectedCategory == cat.name,
+                                  onTap: () {
+                                    setState(
+                                      () => _selectedCategory = cat.name,
+                                    );
+                                    _showReorderTipIfNeeded();
+                                  },
+                                ),
+                              );
+
+                              if (index == 0) {
+                                return KeyedSubtree(
+                                  key: const ValueKey('cat_All'),
+                                  child: chip,
+                                );
+                              }
+
+                              return ReorderableDelayedDragStartListener(
+                                key: ValueKey('cat_$catName'),
+                                index: index,
+                                child: chip,
                               );
                             },
                           ),
@@ -369,9 +475,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _addTask() async {
-    final result = await Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AddEditTaskScreen()));
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            AddEditTaskScreen(availableCategories: _tasks.categories),
+      ),
+    );
 
     if (result != null && result is Map<String, dynamic>) {
       await _tasks.addTask(
@@ -387,7 +496,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _editTask(Task task) async {
     final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AddEditTaskScreen(existingTask: task)),
+      MaterialPageRoute(
+        builder: (_) => AddEditTaskScreen(
+          existingTask: task,
+          availableCategories: _tasks.categories,
+        ),
+      ),
     );
 
     if (result != null && result is Task) {
@@ -504,7 +618,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Tip: You can clear completed tasks from the Completed section!',
+                'Tip: You can delete all completed tasks when not needed.',
                 style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
               ),
             ),
@@ -516,6 +630,88 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
+  }
+
+  Future<void> _showReorderTipIfNeeded() async {
+    if (_hasShownReorderTip) return;
+    if (_tasks.categories.length <= 2)
+      return; // Only "All" and "General", nothing to really reorder logically
+
+    _hasShownReorderTip = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasShownReorderTip', true);
+
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 1200));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.drag_indicator_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Tip: Long-press a category pill to reorder it!',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  Future<void> _addCustomCategory() async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'New Category',
+          style: GoogleFonts.nunito(fontWeight: FontWeight.w700),
+        ),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(
+            hintText: 'e.g., School, Hobby, Projects',
+            hintStyle: GoogleFonts.nunito(),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+          onSubmitted: (val) => Navigator.of(ctx).pop(val),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text('Cancel', style: GoogleFonts.nunito()),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(controller.text),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Add', style: GoogleFonts.nunito()),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null && result.trim().isNotEmpty) {
+      await _tasks.addCustomCategory(result.trim());
+      setState(() => _selectedCategory = result.trim());
+    }
   }
 }
 

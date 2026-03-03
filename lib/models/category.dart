@@ -18,7 +18,8 @@ class TaskCategory {
   static TaskCategory fromName(String name) {
     return defaults.firstWhere(
       (c) => c.name == name,
-      orElse: () => defaults[1], // General
+      orElse: () =>
+          TaskCategory(name: name, icon: Icons.folder_special_rounded),
     );
   }
 }

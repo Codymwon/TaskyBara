@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/task.dart';
 import '../models/category.dart';
 import '../theme/app_colors.dart';
+import 'package:flutter/services.dart';
 
 class TaskCard extends StatelessWidget {
   final Task task;
@@ -47,54 +48,60 @@ class TaskCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final category = TaskCategory.fromName(task.category);
 
-    return Dismissible(
-      key: Key(task.id),
-      direction: DismissDirection.endToStart,
-      onDismissed: (_) => onDelete(),
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.only(right: 24),
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: AppColors.danger.withValues(alpha: 0.15),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Dismissible(
+        key: Key(task.id),
+        direction: DismissDirection.endToStart,
+        onDismissed: (_) {
+          HapticFeedback.heavyImpact();
+          onDelete();
+        },
+        background: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Icon(
-          Icons.delete_outline_rounded,
-          color: AppColors.danger,
-          size: 28,
-        ),
-      ),
-      child: GestureDetector(
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeInOut,
-          margin: const EdgeInsets.only(bottom: 12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF2C2824) : Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border(
-              left: BorderSide(
-                color: task.isCompleted
-                    ? AppColors.success.withValues(alpha: 0.5)
-                    : _priorityColor,
-                width: 4,
-              ),
+          child: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 24),
+            decoration: BoxDecoration(
+              color: AppColors.danger.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
-                offset: const Offset(0, 2),
-                blurRadius: 8,
-              ),
-            ],
+            child: const Icon(
+              Icons.delete_outline_rounded,
+              color: AppColors.danger,
+              size: 28,
+            ),
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        ),
+        child: GestureDetector(
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF2C2824) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border(
+                left: BorderSide(
+                  color: task.isCompleted
+                      ? AppColors.success.withValues(alpha: 0.5)
+                      : _priorityColor,
+                  width: 4,
+                ),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
+                  offset: const Offset(0, 2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                 // Checkbox
                 GestureDetector(
                   onTap: onToggle,

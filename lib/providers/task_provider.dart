@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task.dart';
+import '../models/category.dart';
 import 'package:uuid/uuid.dart';
 
 class TaskProvider extends ChangeNotifier {
@@ -10,10 +11,21 @@ class TaskProvider extends ChangeNotifier {
   static const _uuid = Uuid();
 
   List<Task> _tasks = [];
+  List<String> _userCategories = [
+    'General',
+    'Work',
+    'Personal',
+    'Shopping',
+    'Health',
+  ];
   Timer? _allDoneTimer;
   bool _isAllDoneExpired = false;
 
   List<Task> get tasks => List.unmodifiable(_tasks);
+
+  List<String> get categories {
+    return [TaskCategory.defaults.first.name, ..._userCategories];
+  }
 
   List<Task> get pendingTasks =>
       _tasks.where((t) => !t.isCompleted).toList()..sort((a, b) {
@@ -71,6 +83,10 @@ class TaskProvider extends ChangeNotifier {
     if (data != null && data.isNotEmpty) {
       _tasks = Task.decode(data);
     }
+    final cats = _prefs.getStringList('${_storageKey}_categories');
+    if (cats != null && cats.isNotEmpty) {
+      _userCategories = cats;
+    }
     _checkAllDoneTimer();
   }
 
@@ -97,6 +113,30 @@ class TaskProvider extends ChangeNotifier {
 
   Future<void> _saveTasks() async {
     await _prefs.setString(_storageKey, Task.encode(_tasks));
+    await _prefs.setStringList('${_storageKey}_categories', _userCategories);
+  }
+
+  void reorderCategories(int oldIndex, int newIndex) {
+    if (oldIndex < 0 ||
+        oldIndex >= _userCategories.length ||
+        newIndex < 0 ||
+        newIndex > _userCategories.length) {
+      return;
+    }
+    final item = _userCategories.removeAt(oldIndex);
+    _userCategories.insert(newIndex, item);
+    _saveTasks();
+    notifyListeners();
+  }
+
+  Future<void> addCustomCategory(String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    if (!categories.contains(trimmed)) {
+      _userCategories.add(trimmed);
+      await _saveTasks();
+      notifyListeners();
+    }
   }
 
   Future<void> addTask({

@@ -7,8 +7,13 @@ import '../theme/app_colors.dart';
 
 class AddEditTaskScreen extends StatefulWidget {
   final Task? existingTask;
+  final List<String> availableCategories;
 
-  const AddEditTaskScreen({super.key, this.existingTask});
+  const AddEditTaskScreen({
+    super.key,
+    this.existingTask,
+    required this.availableCategories,
+  });
 
   @override
   State<AddEditTaskScreen> createState() => _AddEditTaskScreenState();
@@ -212,11 +217,12 @@ class _AddEditTaskScreenState extends State<AddEditTaskScreen> {
                         ? AppColors.darkTextPrimary
                         : AppColors.textPrimary,
                   ),
-                  items: TaskCategory.defaults
-                      .where((c) => c.name != 'All')
-                      .map(
-                        (c) => DropdownMenuItem(
-                          value: c.name,
+                  items: widget.availableCategories
+                      .where((c) => c != 'All')
+                      .map((catName) {
+                        final cat = TaskCategory.fromName(catName);
+                        return DropdownMenuItem(
+                          value: catName,
                           child: Row(
                             children: [
                               Container(
@@ -228,17 +234,17 @@ class _AddEditTaskScreenState extends State<AddEditTaskScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
-                                  c.icon,
+                                  cat.icon,
                                   size: 18,
                                   color: colorScheme.primary,
                                 ),
                               ),
                               const SizedBox(width: 12),
-                              Text(c.name),
+                              Text(catName),
                             ],
                           ),
-                        ),
-                      )
+                        );
+                      })
                       .toList(),
                   onChanged: (value) {
                     if (value != null) setState(() => _category = value);
