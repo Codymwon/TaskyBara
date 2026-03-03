@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/task.dart';
@@ -9,6 +10,8 @@ class TaskProvider extends ChangeNotifier {
   static const _uuid = Uuid();
 
   List<Task> _tasks = [];
+  Timer? _allDoneTimer;
+  bool _isAllDoneExpired = false;
 
   List<Task> get tasks => List.unmodifiable(_tasks);
 
@@ -49,7 +52,7 @@ class TaskProvider extends ChangeNotifier {
   CapybaraMood get mood {
     if (_tasks.isEmpty) return CapybaraMood.noTasks;
     if (pendingTasks.isEmpty && completedTasks.isNotEmpty) {
-      return CapybaraMood.allDone;
+      return _isAllDoneExpired ? CapybaraMood.noTasks : CapybaraMood.allDone;
     }
     final total = _tasks.length;
     final completed = completedTasks.length;
@@ -68,6 +71,28 @@ class TaskProvider extends ChangeNotifier {
     if (data != null && data.isNotEmpty) {
       _tasks = Task.decode(data);
     }
+    _checkAllDoneTimer();
+  }
+
+  void _checkAllDoneTimer() {
+    if (pendingTasks.isEmpty && completedTasks.isNotEmpty) {
+      if (_allDoneTimer == null || !_allDoneTimer!.isActive) {
+        _isAllDoneExpired = false;
+        // 3 minute hold time for the "All Done" celebration before reverting
+        _allDoneTimer = Timer(const Duration(minutes: 3), () {
+          _isAllDoneExpired = true;
+          notifyListeners();
+        });
+      }
+    } else {
+      _allDoneTimer?.cancel();
+      _isAllDoneExpired = false;
+    }
+  }
+
+  void _notifyAndCheck() {
+    _checkAllDoneTimer();
+    notifyListeners();
   }
 
   Future<void> _saveTasks() async {
@@ -92,7 +117,7 @@ class TaskProvider extends ChangeNotifier {
     );
     _tasks.add(task);
     await _saveTasks();
-    notifyListeners();
+    _notifyAndCheck();
   }
 
   Future<void> updateTask(Task updated) async {
@@ -100,7 +125,7 @@ class TaskProvider extends ChangeNotifier {
     if (index != -1) {
       _tasks[index] = updated;
       await _saveTasks();
-      notifyListeners();
+      _notifyAndCheck();
     }
   }
 
@@ -111,20 +136,20 @@ class TaskProvider extends ChangeNotifier {
         isCompleted: !_tasks[index].isCompleted,
       );
       await _saveTasks();
-      notifyListeners();
+      _notifyAndCheck();
     }
   }
 
   Future<void> deleteTask(String taskId) async {
     _tasks.removeWhere((t) => t.id == taskId);
     await _saveTasks();
-    notifyListeners();
+    _notifyAndCheck();
   }
 
   Future<void> clearCompleted() async {
     _tasks.removeWhere((t) => t.isCompleted);
     await _saveTasks();
-    notifyListeners();
+    _notifyAndCheck();
   }
 }
 

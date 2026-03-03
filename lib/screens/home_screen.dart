@@ -465,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.swipe_left_rounded, color: Colors.white, size: 20),
+            const _AnimatedSwipeIcon(),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -514,6 +514,50 @@ class _HomeScreenState extends State<HomeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
         backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+}
+
+class _AnimatedSwipeIcon extends StatefulWidget {
+  const _AnimatedSwipeIcon();
+
+  @override
+  State<_AnimatedSwipeIcon> createState() => _AnimatedSwipeIconState();
+}
+
+class _AnimatedSwipeIconState extends State<_AnimatedSwipeIcon>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<Offset> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    )..repeat(reverse: true);
+    _animation = Tween<Offset>(
+      begin: Offset.zero,
+      end: const Offset(-0.5, 0),
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SlideTransition(
+      position: _animation,
+      child: const Icon(
+        Icons.swipe_left_rounded,
+        color: Colors.white,
+        size: 24,
       ),
     );
   }
