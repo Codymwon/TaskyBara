@@ -113,61 +113,6 @@ class SettingsScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 28),
-
-              // ─── About ────────────────────────────
-              _sectionHeader(context, 'ABOUT'),
-              const SizedBox(height: 12),
-              _settingsCard(
-                context,
-                isDark: isDark,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
-                      children: [
-                        Text(
-                          '(•‿•)',
-                          style: GoogleFonts.nunito(
-                            fontSize: 36,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'TaskyBara',
-                          style: GoogleFonts.nunito(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Your cozy capybara task companion',
-                          style: GoogleFonts.nunito(
-                            fontSize: 14,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'v1.0.0',
-                          style: GoogleFonts.nunito(
-                            fontSize: 12,
-                            color: isDark
-                                ? AppColors.darkTextLight
-                                : AppColors.textLight,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
             ],
           );
         },
@@ -184,28 +129,6 @@ class SettingsScreen extends StatelessWidget {
         letterSpacing: 1.2,
         color: Theme.of(context).colorScheme.primary,
       ),
-    );
-  }
-
-  Widget _settingsCard(
-    BuildContext context, {
-    required bool isDark,
-    required List<Widget> children,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF2C2824) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.05),
-            offset: const Offset(0, 2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: Column(children: children),
     );
   }
 

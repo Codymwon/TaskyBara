@@ -102,110 +102,113 @@ class TaskCard extends StatelessWidget {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                // Checkbox
-                GestureDetector(
-                  onTap: onToggle,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
-                    width: 28,
-                    height: 28,
-                    margin: const EdgeInsets.only(top: 2),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: task.isCompleted
-                          ? AppColors.success
-                          : Colors.transparent,
-                      border: Border.all(
+                  // Checkbox
+                  GestureDetector(
+                    onTap: onToggle,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut,
+                      width: 28,
+                      height: 28,
+                      margin: const EdgeInsets.only(top: 2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
                         color: task.isCompleted
                             ? AppColors.success
-                            : colorScheme.primary.withValues(alpha: 0.4),
-                        width: 2,
-                      ),
-                    ),
-                    child: task.isCompleted
-                        ? const Icon(
-                            Icons.check_rounded,
-                            size: 18,
-                            color: Colors.white,
-                          )
-                        : null,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                // Content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Title
-                      AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 300),
-                        style: GoogleFonts.nunito(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          decoration: task.isCompleted
-                              ? TextDecoration.lineThrough
-                              : TextDecoration.none,
+                            : Colors.transparent,
+                        border: Border.all(
                           color: task.isCompleted
-                              ? (isDark
-                                    ? AppColors.darkTextLight
-                                    : AppColors.textLight)
-                              : (isDark
-                                    ? AppColors.darkTextPrimary
-                                    : AppColors.textPrimary),
+                              ? AppColors.success
+                              : colorScheme.primary.withValues(alpha: 0.4),
+                          width: 2,
                         ),
-                        child: Text(task.title),
                       ),
-                      // Description
-                      if (task.description != null &&
-                          task.description!.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          task.description!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                      child: task.isCompleted
+                          ? const Icon(
+                              Icons.check_rounded,
+                              size: 18,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // Content
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title
+                        AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 300),
                           style: GoogleFonts.nunito(
-                            fontSize: 13,
-                            color: isDark
-                                ? AppColors.darkTextSecondary
-                                : AppColors.textSecondary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            decoration: task.isCompleted
+                                ? TextDecoration.lineThrough
+                                : TextDecoration.none,
+                            color: task.isCompleted
+                                ? (isDark
+                                      ? AppColors.darkTextLight
+                                      : AppColors.textLight)
+                                : (isDark
+                                      ? AppColors.darkTextPrimary
+                                      : AppColors.textPrimary),
                           ),
+                          child: Text(task.title),
+                        ),
+                        // Description
+                        if (task.description != null &&
+                            task.description!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            task.description!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.nunito(
+                              fontSize: 13,
+                              color: isDark
+                                  ? AppColors.darkTextSecondary
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
+                        // Metadata row
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            // Priority badge
+                            _MetaBadge(
+                              icon: Icons.flag_rounded,
+                              label: _priorityLabel,
+                              color: _priorityColor,
+                            ),
+                            // Category badge
+                            _MetaBadge(
+                              icon: category.icon,
+                              label: task.category,
+                              color: colorScheme.primary,
+                            ),
+                            // Due date
+                            if (task.dueDate != null)
+                              _MetaBadge(
+                                icon: Icons.calendar_today_rounded,
+                                label: DateFormat(
+                                  'MMM d',
+                                ).format(task.dueDate!),
+                                color: _isDueOrOverdue
+                                    ? AppColors.danger
+                                    : colorScheme.secondary,
+                              ),
+                          ],
                         ),
                       ],
-                      const SizedBox(height: 10),
-                      // Metadata row
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 6,
-                        children: [
-                          // Priority badge
-                          _MetaBadge(
-                            icon: Icons.flag_rounded,
-                            label: _priorityLabel,
-                            color: _priorityColor,
-                          ),
-                          // Category badge
-                          _MetaBadge(
-                            icon: category.icon,
-                            label: task.category,
-                            color: colorScheme.primary,
-                          ),
-                          // Due date
-                          if (task.dueDate != null)
-                            _MetaBadge(
-                              icon: Icons.calendar_today_rounded,
-                              label: DateFormat('MMM d').format(task.dueDate!),
-                              color: _isDueOrOverdue
-                                  ? AppColors.danger
-                                  : colorScheme.secondary,
-                            ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
