@@ -24,4 +24,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - Assets/
+    - Assets/notask.png
+    - Assets/hastask.png
+    - Assets/almostdone.png
+    - Assets/Alldone.png

@@ -76,11 +76,11 @@ class SettingsScreen extends StatelessWidget {
                   showSelectedIcon: true,
                   style: ButtonStyle(
                     padding: WidgetStateProperty.all(
-                      const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
                     ),
                     textStyle: WidgetStateProperty.all(
                       GoogleFonts.nunito(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),

@@ -42,15 +42,12 @@ class CapybaraMoodWidget extends StatelessWidget {
         ),
         child: Column(
           children: [
-            // Capybara emoticon
-            Text(
-              _emoticon,
-              style: GoogleFonts.nunito(
-                fontSize: 48,
-                fontWeight: FontWeight.w700,
-              ),
+            // Capybara illustration
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.asset(_assetPath, height: 120, fit: BoxFit.contain),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             // Mood message
             Text(
               _message,
@@ -86,16 +83,16 @@ class CapybaraMoodWidget extends StatelessWidget {
     );
   }
 
-  String get _emoticon {
+  String get _assetPath {
     switch (mood) {
       case CapybaraMoodState.noTasks:
-        return '(•‿•)';
+        return 'Assets/notask.png';
       case CapybaraMoodState.hasTasks:
-        return '(•ᴗ•)';
+        return 'Assets/hastask.png';
       case CapybaraMoodState.almostDone:
-        return '(ᵔ◡ᵔ)';
+        return 'Assets/almostdone.png';
       case CapybaraMoodState.allDone:
-        return '(≧◡≦)';
+        return 'Assets/Alldone.png';
     }
   }
 

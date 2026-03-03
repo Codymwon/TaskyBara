@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/task.dart';
 import '../models/category.dart';
@@ -31,6 +32,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String _selectedCategory = 'All';
   bool _showCompleted = false;
+  bool _hasShownSwipeTip = false;
+  bool _hasShownClearTip = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSwipeTipFlag();
+  }
+
+  Future<void> _loadSwipeTipFlag() async {
+    final prefs = await SharedPreferences.getInstance();
+    _hasShownSwipeTip = prefs.getBool('hasShownSwipeTip') ?? false;
+    _hasShownClearTip = prefs.getBool('hasShownClearTip') ?? false;
+  }
 
   TaskProvider get _tasks => widget.taskProvider;
 
@@ -181,7 +196,10 @@ class _HomeScreenState extends State<HomeScreen> {
                         final task = filteredPending[index];
                         return TaskCard(
                           task: task,
-                          onToggle: () => _tasks.toggleComplete(task.id),
+                          onToggle: () {
+                            _tasks.toggleComplete(task.id);
+                            if (!task.isCompleted) _showClearTipIfNeeded();
+                          },
                           onDelete: () => _deleteTask(task),
                           onTap: () => _editTask(task),
                         );
@@ -200,8 +218,6 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Center(
                         child: Column(
                           children: [
-                            Text('🦫', style: const TextStyle(fontSize: 64)),
-                            const SizedBox(height: 16),
                             Text(
                               'No tasks yet!',
                               style: GoogleFonts.nunito(
@@ -365,6 +381,7 @@ class _HomeScreenState extends State<HomeScreen> {
         category: result['category'] as String,
         dueDate: result['dueDate'] as DateTime?,
       );
+      _showSwipeTipIfNeeded();
     }
   }
 
@@ -433,6 +450,70 @@ class _HomeScreenState extends State<HomeScreen> {
             child: const Text('Clear'),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showSwipeTipIfNeeded() async {
+    if (_hasShownSwipeTip) return;
+    _hasShownSwipeTip = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasShownSwipeTip', true);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.swipe_left_rounded, color: Colors.white, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Tip: Swipe a task left to delete it!',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+
+  Future<void> _showClearTipIfNeeded() async {
+    if (_hasShownClearTip) return;
+    _hasShownClearTip = true;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('hasShownClearTip', true);
+
+    if (!mounted) return;
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.cleaning_services_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Tip: You can clear completed tasks from the Completed section!',
+                style: GoogleFonts.nunito(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 4),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
